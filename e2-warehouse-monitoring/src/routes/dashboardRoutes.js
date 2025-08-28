@@ -5,6 +5,7 @@ const {
     getHistoricalData,
     getAggregateData
 } = require('../controllers/dashboardController');
+const { getZoneAggregates, getZoneBreachSummary } = require('../controllers/dashboardController');
 const { protect, authorize } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
@@ -16,5 +17,7 @@ router.use(protect, authorize('Operator', 'Manager', 'Admin'));
 router.get('/latest', getLatestReadings);
 router.get('/history/:sensorId', getHistoricalData);
 router.get('/aggregates/:sensorId', getAggregateData);
+router.get('/zones/:zoneId/aggregates', getZoneAggregates);
+router.get('/zones/:zoneId/breach-summary', getZoneBreachSummary);
 
 module.exports = router;

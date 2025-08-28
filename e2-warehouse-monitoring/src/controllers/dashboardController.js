@@ -92,3 +92,105 @@ exports.getAggregateData = async (req, res) => {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
+
+
+// @desc    Get aggregate data for a zone (averages across sensors in the zone) over the last 24 hours
+// @route   GET /api/dashboard/zones/:zoneId/aggregates
+// @access  Protected (All roles)
+exports.getZoneAggregates = async (req, res) => {
+    try {
+        const zoneId = req.params.zoneId;
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        // Join Readings with Sensors to filter by sensor.zone
+        const aggregates = await Reading.aggregate([
+            // lookup sensor metadata
+            {
+                $lookup: {
+                    from: 'sensors',
+                    localField: 'sensorId',
+                    foreignField: 'sensorId',
+                    as: 'sensor'
+                }
+            },
+            { $unwind: '$sensor' },
+            // match by zone id and time range
+            {
+                $match: {
+                    'sensor.zone': require('mongoose').Types.ObjectId(zoneId),
+                    timestamp: { $gte: twentyFourHoursAgo }
+                }
+            },
+            // group across the zone
+            {
+                $group: {
+                    _id: null,
+                    avgTemp: { $avg: '$temperature' },
+                    minTemp: { $min: '$temperature' },
+                    maxTemp: { $max: '$temperature' },
+                    avgHumidity: { $avg: '$humidity' },
+                    minHumidity: { $min: '$humidity' },
+                    maxHumidity: { $max: '$humidity' },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        if (!aggregates || aggregates.length === 0) {
+            return res.status(404).json({ message: 'No readings found for this zone in the last 24 hours.' });
+        }
+
+        res.status(200).json({ success: true, data: aggregates[0] });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+
+// @desc    Get a simple breach-summary for a zone over the last 24 hours
+// @route   GET /api/dashboard/zones/:zoneId/breach-summary
+// @access  Protected (All roles)
+exports.getZoneBreachSummary = async (req, res) => {
+    try {
+        const zoneId = req.params.zoneId;
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        // We will count readings that fall outside their sensor thresholds
+        const pipeline = [
+            { $lookup: { from: 'sensors', localField: 'sensorId', foreignField: 'sensorId', as: 'sensor' } },
+            { $unwind: '$sensor' },
+            { $match: { 'sensor.zone': require('mongoose').Types.ObjectId(zoneId), timestamp: { $gte: twentyFourHoursAgo } } },
+            {
+                $project: {
+                    sensorId: 1,
+                    temperature: 1,
+                    humidity: 1,
+                    isTempBreach: { $or: [{ $lt: ['$temperature', '$sensor.minTemperature'] }, { $gt: ['$temperature', '$sensor.maxTemperature'] }] },
+                    isHumBreach: { $or: [{ $lt: ['$humidity', '$sensor.minHumidity'] }, { $gt: ['$humidity', '$sensor.maxHumidity'] }] }
+                }
+            },
+            {
+                $group: {
+                    _id: '$sensorId',
+                    tempBreaches: { $sum: { $cond: ['$isTempBreach', 1, 0] } },
+                    humBreaches: { $sum: { $cond: ['$isHumBreach', 1, 0] } },
+                    count: { $sum: 1 }
+                }
+            }
+        ];
+
+        const perSensor = await Reading.aggregate(pipeline);
+
+        const zoneSummary = perSensor.reduce((acc, s) => {
+            acc.totalTempBreaches += s.tempBreaches || 0;
+            acc.totalHumBreaches += s.humBreaches || 0;
+            acc.totalReadings += s.count || 0;
+            acc.sensors += 1;
+            return acc;
+        }, { totalTempBreaches: 0, totalHumBreaches: 0, totalReadings: 0, sensors: 0 });
+
+        res.status(200).json({ success: true, data: zoneSummary });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};

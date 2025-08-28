@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import ManagementLayout from '../components/admin/ManagementLayout';
 import ZoneList from '../components/admin/ZoneList';
+import ZoneCard from '../components/ZoneCard';
+import ZoneDetailsModal from '../components/ZoneDetailsModal';
 import ZoneForm from '../components/admin/ZoneForm';
 import apiClient from '../api/apiClient';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -63,6 +65,8 @@ const ManageZonesPage = () => {
         setToDeleteZone(null);
     };
 
+    const [selectedZone, setSelectedZone] = useState(null);
+
     return (
         <ManagementLayout title="Manage Zones">
             <div className="manage-zones-grid">
@@ -70,10 +74,14 @@ const ManageZonesPage = () => {
                     <h3 className="card-title">{editingZone ? 'Edit Zone' : 'Add New Zone'}</h3>
                     <ZoneForm onSubmit={handleFormSubmit} initialData={editingZone} onCancel={() => setEditingZone(null)} />
                 </div>
-                <div className="card">
+                <div>
                     <h3 className="card-title">Existing Zones</h3>
-                    {isLoading ? <p>Loading...</p> : error ? <p className="form-error">{error}</p> : (
-                        <ZoneList zones={zones} onEdit={setEditingZone} onDelete={handleDelete} />
+                    {isLoading ? <div className="card"><p>Loading...</p></div> : error ? <div className="card"><p className="form-error">{error}</p></div> : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+                            {zones.map(z => (
+                                <ZoneCard key={z._id} zone={z} onOpen={(zone) => setSelectedZone(zone)} />
+                            ))}
+                        </div>
                     )}
                 </div>
             </div>
@@ -84,6 +92,8 @@ const ManageZonesPage = () => {
                 onConfirm={handleConfirmDelete}
                 onCancel={() => setConfirmOpen(false)}
             />
+
+            <ZoneDetailsModal open={!!selectedZone} zone={selectedZone} onClose={() => setSelectedZone(null)} />
         </ManagementLayout>
     );
 };
