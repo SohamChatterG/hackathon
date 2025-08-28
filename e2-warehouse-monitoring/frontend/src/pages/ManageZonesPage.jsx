@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import ManagementLayout from '../components/admin/ManagementLayout';
 import ZoneList from '../components/admin/ZoneList';
 import ZoneForm from '../components/admin/ZoneForm';
 import apiClient from '../api/apiClient';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 const ManageZonesPage = () => {
     const [zones, setZones] = useState([]);
@@ -36,20 +38,29 @@ const ManageZonesPage = () => {
             fetchZones();
             return true;
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to save zone.');
+            toast.error(err.response?.data?.message || 'Failed to save zone.');
             return false;
         }
     };
 
-    const handleDelete = async (zoneId) => {
-        if (window.confirm('Are you sure you want to delete this zone?')) {
-            try {
-                await apiClient.delete(`/zones/${zoneId}`);
-                fetchZones();
-            } catch (err) {
-                alert(err.response?.data?.message || 'Failed to delete zone.');
-            }
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [toDeleteZone, setToDeleteZone] = useState(null);
+
+    const handleDelete = (zoneId) => {
+        setToDeleteZone(zoneId);
+        setConfirmOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        setConfirmOpen(false);
+        try {
+            await apiClient.delete(`/zones/${toDeleteZone}`);
+            fetchZones();
+        } catch (err) {
+            // small fallback
+            console.error(err);
         }
+        setToDeleteZone(null);
     };
 
     return (
@@ -66,6 +77,13 @@ const ManageZonesPage = () => {
                     )}
                 </div>
             </div>
+            <ConfirmDialog
+                open={confirmOpen}
+                title="Delete Zone"
+                message="Are you sure you want to delete this zone?"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </ManagementLayout>
     );
 };

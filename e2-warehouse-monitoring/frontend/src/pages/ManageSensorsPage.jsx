@@ -6,6 +6,7 @@ import ManagementLayout from '../components/admin/ManagementLayout';
 import SensorList from '../components/admin/SensorList';
 import SensorForm from '../components/admin/SensorForm';
 import apiClient from '../api/apiClient';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 const ManageSensorsPage = () => {
     const [sensors, setSensors] = useState([]);
@@ -14,6 +15,8 @@ const ManageSensorsPage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [toDeleteSensor, setToDeleteSensor] = useState(null);
 
     const fetchData = async () => {
         try {
@@ -73,19 +76,26 @@ const ManageSensorsPage = () => {
         setSelectedSensor(null);
     };
 
-    const handleDeleteSensor = async (sensorId) => {
-        if (window.confirm('Are you sure you want to delete this sensor?')) {
-            try {
-                await apiClient.delete(`/sensors/${sensorId}`);
-                toast.success('Sensor deleted successfully.');
-                await fetchData();
-                if (selectedSensor?._id === sensorId) {
-                    setSelectedSensor(null);
-                    setIsEditing(false);
-                }
-            } catch (err) {
-                toast.error(err.response?.data?.message || 'Failed to delete sensor.');
+    const handleDeleteSensor = (sensorId) => {
+        setToDeleteSensor(sensorId);
+        setConfirmOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        setConfirmOpen(false);
+        const sensorId = toDeleteSensor;
+        setToDeleteSensor(null);
+        if (!sensorId) return;
+        try {
+            await apiClient.delete(`/sensors/${sensorId}`);
+            toast.success('Sensor deleted successfully.');
+            await fetchData();
+            if (selectedSensor?._id === sensorId) {
+                setSelectedSensor(null);
+                setIsEditing(false);
             }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to delete sensor.');
         }
     };
 
@@ -115,6 +125,13 @@ const ManageSensorsPage = () => {
                     )}
                 </div>
             </div>
+            <ConfirmDialog
+                open={confirmOpen}
+                title="Delete Sensor"
+                message="Are you sure you want to delete this sensor?"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </ManagementLayout>
     );
 };

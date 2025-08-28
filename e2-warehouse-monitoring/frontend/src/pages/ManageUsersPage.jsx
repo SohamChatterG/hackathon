@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api/apiClient';
+import { toast } from 'react-hot-toast';
 import ManagementLayout from '../components/admin/ManagementLayout';
 import UserList from '../components/admin/UserList';
 import AssignZonesForm from '../components/admin/AssignZoneForm';
@@ -44,7 +45,7 @@ const ManageUsersPage = () => {
             fetchData();
             setSelectedUser(null);
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to update user zones.');
+            toast.error(err.response?.data?.message || 'Failed to update user zones.');
         }
     };
 

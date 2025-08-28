@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 const RegisterPage = () => {
     const [name, setName] = useState('');
@@ -20,7 +21,7 @@ const RegisterPage = () => {
         try {
             // Pass the role state to the register function
             await register({ name, email, password, phoneNumber, role });
-            alert('Registration successful! Please sign in.');
+            toast.success('Registration successful! Please sign in.');
             navigate('/login');
         } catch (err) {
             setError(err.message || 'Failed to register. Please try again.');

@@ -4,11 +4,9 @@ import { toast } from 'react-hot-toast';
 const SensorForm = ({ onSubmit, initialData, zones, onCancel }) => {
     const [formData, setFormData] = useState({
         sensorId: '',
-        type: 'temperature',
         zone: '',
         minTemperature: '',
         maxTemperature: '',
-        temperatureUnit: 'C',
         minHumidity: '',
         maxHumidity: '',
     });
@@ -17,22 +15,18 @@ const SensorForm = ({ onSubmit, initialData, zones, onCancel }) => {
         if (initialData) {
             setFormData({
                 sensorId: initialData.sensorId || '',
-                type: initialData.type || 'temperature',
                 zone: initialData.zone?._id || '',
                 minTemperature: initialData.minTemperature ?? initialData.thresholds?.temperature?.min ?? '',
                 maxTemperature: initialData.maxTemperature ?? initialData.thresholds?.temperature?.max ?? '',
-                temperatureUnit: initialData.temperatureUnit || initialData.thresholds?.temperature?.unit || 'C',
                 minHumidity: initialData.minHumidity ?? initialData.thresholds?.humidity?.min ?? '',
                 maxHumidity: initialData.maxHumidity ?? initialData.thresholds?.humidity?.max ?? '',
             });
         } else {
             setFormData({
                 sensorId: '',
-                type: 'temperature',
                 zone: zones.length > 0 ? zones[0]._id : '',
                 minTemperature: '',
                 maxTemperature: '',
-                temperatureUnit: 'C',
                 minHumidity: '',
                 maxHumidity: '',
             });
@@ -54,8 +48,8 @@ const SensorForm = ({ onSubmit, initialData, zones, onCancel }) => {
         if (success && !initialData) {
             // Reset only if creating a new one
             setFormData({
-                sensorId: '', type: 'temperature', zone: zones.length > 0 ? zones[0]._id : '',
-                minTemperature: '', maxTemperature: '', temperatureUnit: 'C', minHumidity: '', maxHumidity: ''
+                sensorId: '', zone: zones.length > 0 ? zones[0]._id : '',
+                minTemperature: '', maxTemperature: '', minHumidity: '', maxHumidity: ''
             });
             toast.success('Sensor registered.');
         }
@@ -67,13 +61,7 @@ const SensorForm = ({ onSubmit, initialData, zones, onCancel }) => {
                 <label htmlFor="sensorId" className="form-label">Sensor ID</label>
                 <input id="sensorId" name="sensorId" type="text" value={formData.sensorId} onChange={handleChange} required className="form-input" />
             </div>
-            <div className="form-group">
-                <label htmlFor="type" className="form-label">Sensor Type</label>
-                <select id="type" name="type" value={formData.type} onChange={handleChange} className="form-input">
-                    <option value="temperature">Temperature</option>
-                    <option value="humidity">Humidity</option>
-                </select>
-            </div>
+            {/* Sensor type removed: both temperature and humidity ranges are collected for every sensor */}
             <div className="form-group">
                 <label htmlFor="zone" className="form-label">Assign to Zone</label>
                 <select id="zone" name="zone" value={formData.zone} onChange={handleChange} required className="form-input">
@@ -95,11 +83,7 @@ const SensorForm = ({ onSubmit, initialData, zones, onCancel }) => {
                     <span>to</span>
                     <input name="maxTemperature" type="number" step="0.1" placeholder="Max" className="form-input"
                         value={formData.maxTemperature} onChange={handleChange} />
-                    <select name="temperatureUnit" className="form-input" style={{ flexShrink: 1, width: '70px' }}
-                        value={formData.temperatureUnit} onChange={handleChange}>
-                        <option>C</option>
-                        <option>F</option>
-                    </select>
+                    {/* unit selector removed - we store temperatures in Celsius by default */}
                 </div>
             </div>
 
