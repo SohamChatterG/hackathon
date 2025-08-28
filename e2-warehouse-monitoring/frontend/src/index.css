@@ -1,0 +1,151 @@
+:root {
+  /* Brand */
+  --primary-color: #0ea5b7;
+  /* cyan-600 slightly brighter */
+  --primary-color-600: #0891b2;
+  --primary-color-700: #0e7490;
+
+  /* Surfaces */
+  --background-dark: #0b1220;
+  /* richer dark */
+  --background-medium: #141c2b;
+  --background-light: #1f2a3c;
+
+  /* Text */
+  --text-light: #eef2f7;
+  --text-medium: #a6b0bf;
+  --text-dark: #7b8596;
+
+  /* Accents */
+  --error-color: #ef5350;
+  --warning-color: #f7c948;
+  --info-color: #6aa9ff;
+
+  /* Shadows & radii */
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.25), 0 6px 6px rgba(0, 0, 0, 0.22);
+  --radius-md: 10px;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background-dark);
+  color: var(--text-light);
+}
+
+/* Links */
+a {
+  color: var(--text-light);
+}
+
+a:hover {
+  color: var(--primary-color);
+}
+
+/* Buttons - base */
+button,
+.button {
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  transition: transform 0.05s ease, background-color 0.15s ease;
+}
+
+button:hover,
+.button:hover {
+  background-color: var(--primary-color-600);
+}
+
+button:active,
+.button:active {
+  transform: translateY(1px);
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+  background-color: var(--background-light);
+  color: var(--text-light);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(14, 165, 183, 0.25);
+}
+
+/* Cards */
+.card {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Top nav used in ManagementLayout */
+.top-nav {
+  display: flex;
+  gap: 1rem;
+  margin: 0.25rem 0 1rem 0;
+}
+
+.top-link {
+  color: var(--text-medium);
+  text-decoration: none;
+}
+
+.top-link:hover {
+  color: var(--text-light);
+}
+
+/* Toast overrides for react-hot-toast */
+.rht--toast {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  color: var(--text-light);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+}
+
+.rht--toast button {
+  background: transparent;
+  border: none;
+  color: var(--text-medium);
+}
+
+/* Primary and secondary button variants */
+.button-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-light);
+}
+
+.cancel-button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-light);
+  margin-left: 0.5rem;
+  padding: 0.45rem 0.8rem;
+}
+
+.submit-button {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  border: none;
+}
+
+.form-error {
+  color: var(--error-color);
+}
