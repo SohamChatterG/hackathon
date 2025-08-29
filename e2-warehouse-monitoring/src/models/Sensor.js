@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const sensorSchema = new mongoose.Schema({
     sensorId: { type: String, required: true, unique: true },
     zone: { type: mongoose.Schema.ObjectId, ref: 'Zone', required: true },
-    type: { type: String, enum: ['temperature', 'humidity'], required: true },
+    // type: { type: String, enum: ['temperature', 'humidity'], required: true },
 
     // Thresholds grouped
     thresholds: {

@@ -22,19 +22,29 @@ exports.getSensors = async (req, res) => {
 // @access  Protected (Admin, Manager)
 exports.createSensor = async (req, res) => {
     try {
-        const { sensorId, type, zone, minTemperature, maxTemperature, temperatureUnit, minHumidity, maxHumidity } = req.body;
-        if (!sensorId || !type || !zone) {
-            return res.status(400).json({ success: false, message: 'Sensor ID, type, and zone are required.' });
+        // 'type' is no longer destructured from req.body
+        const { sensorId, zone, minTemperature, maxTemperature, minHumidity, maxHumidity } = req.body;
+
+        // Update the validation check
+        if (!sensorId || !zone) {
+            return res.status(400).json({ success: false, message: 'Sensor ID and zone are required.' });
         }
+
         const sensor = await Sensor.create({
             sensorId,
-            type,
             zone,
-            minTemperature,
-            maxTemperature,
-            temperatureUnit,
-            minHumidity,
-            maxHumidity
+            // 'type' field is removed from creation
+            // Re-structure the data to match the nested schema
+            thresholds: {
+                temperature: {
+                    min: minTemperature,
+                    max: maxTemperature
+                },
+                humidity: {
+                    min: minHumidity,
+                    max: maxHumidity
+                }
+            }
         });
         res.status(201).json({ success: true, data: sensor });
     } catch (error) {
