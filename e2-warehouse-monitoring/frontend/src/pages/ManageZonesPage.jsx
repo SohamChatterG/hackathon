@@ -20,6 +20,11 @@ const ManageZonesPage = () => {
             const response = await apiClient.get('/zones');
             setZones(response.data.data);
             setError('');
+            // If a zone is selected, update it to the latest version from the refreshed zones
+            if (selectedZone) {
+                const updated = response.data.data.find(z => z._id === selectedZone._id);
+                if (updated) setSelectedZone(updated);
+            }
         } catch (err) {
             setError('Failed to fetch zones.');
         } finally {

@@ -12,42 +12,53 @@ const ZoneDetailsModal = ({ open, zone, onClose }) => {
     const [breachSummary, setBreachSummary] = useState(null);
     const [sensorStats, setSensorStats] = useState({});
 
+    // Extracted load function for reuse
+    const loadZoneDetails = async () => {
+        setLoading(true);
+        try {
+            const [sRes, uRes] = await Promise.all([
+                apiClient.get(`/sensors`),
+                apiClient.get(`/users`)
+            ]);
+            // filter sensors by zone id
+            const allSensors = sRes.data.data || [];
+            const zoneSensors = allSensors.filter(s => s.zone && s.zone._id === zone._id);
+            setSensors(zoneSensors);
+
+            const allUsers = uRes.data.data || [];
+            const assigned = allUsers.filter(u => {
+                if (!u.zones) return false;
+                // zones can be array of objects or array of IDs
+                if (u.zones.length === 0) return false;
+                if (typeof u.zones[0] === 'object') {
+                    return u.zones.some(z => z && (z._id === zone._id || z === zone._id));
+                } else {
+                    return u.zones.includes(zone._id);
+                }
+            });
+            setUsers(assigned);
+            // load zone aggregates and breach summary (server-side)
+            try {
+                const [aggRes, breachRes] = await Promise.all([
+                    apiClient.get(`/dashboard/zones/${zone._id}/aggregates`),
+                    apiClient.get(`/dashboard/zones/${zone._id}/breach-summary`)
+                ]);
+                setZoneAgg(aggRes.data.data);
+                setBreachSummary(breachRes.data.data);
+            } catch (err) {
+                // not fatal; we can still compute client-side
+                // console.warn('Zone aggregates/breach summary not available', err);
+            }
+        } catch (err) {
+            toast.error('Failed to load zone details');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (!open || !zone) return;
-        const load = async () => {
-            setLoading(true);
-            try {
-                const [sRes, uRes] = await Promise.all([
-                    apiClient.get(`/sensors`),
-                    apiClient.get(`/users`)
-                ]);
-                // filter sensors by zone id
-                const allSensors = sRes.data.data || [];
-                const zoneSensors = allSensors.filter(s => s.zone && s.zone._id === zone._id);
-                setSensors(zoneSensors);
-
-                const allUsers = uRes.data.data || [];
-                const assigned = allUsers.filter(u => (u.zones || []).includes(zone._id));
-                setUsers(assigned);
-                // load zone aggregates and breach summary (server-side)
-                try {
-                    const [aggRes, breachRes] = await Promise.all([
-                        apiClient.get(`/dashboard/zones/${zone._id}/aggregates`),
-                        apiClient.get(`/dashboard/zones/${zone._id}/breach-summary`)
-                    ]);
-                    setZoneAgg(aggRes.data.data);
-                    setBreachSummary(breachRes.data.data);
-                } catch (err) {
-                    // not fatal; we can still compute client-side
-                    // console.warn('Zone aggregates/breach summary not available', err);
-                }
-            } catch (err) {
-                toast.error('Failed to load zone details');
-            } finally {
-                setLoading(false);
-            }
-        };
-        load();
+        loadZoneDetails();
     }, [open, zone]);
 
     // when sensors are set, fetch per-sensor history (small, limited) and compute stats
