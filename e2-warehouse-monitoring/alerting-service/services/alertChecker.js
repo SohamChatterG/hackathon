@@ -17,15 +17,31 @@ const findUsersToNotify = async (zoneId, escalationLevel) => {
     }).select('name email phoneNumber');
 };
 
-// Helper function to send all types of notifications
-const sendAllNotifications = (users, sensor, reading, alert, zone) => {
-    const isTemp = sensor.type === 'temperature';
-    const value = isTemp ? reading.temperature : reading.humidity;
-    const unit = isTemp ? sensor.temperatureUnit : '%';
-    const min = isTemp ? sensor.minTemperature : sensor.minHumidity;
-    const max = isTemp ? sensor.maxTemperature : sensor.maxHumidity;
 
-    const alertMessage = `Alert for sensor "${sensor.sensorId}" in zone "${zone.name}": ${sensor.type} of ${value}${unit} is outside the safe range of ${min}${unit} to ${max}${unit}. Please check the dashboard.`;
+// Helper function to send notifications for a specific metric
+const sendAllNotifications = (users, sensor, reading, alert, zone, metric) => {
+    let value, unit, min, max, metricLabel;
+    if (metric === 'temperature') {
+        value = reading.temperature;
+        unit = sensor.temperatureUnit || sensor.thresholds?.temperature?.unit || 'C';
+        min = sensor.minTemperature ?? sensor.thresholds?.temperature?.min;
+        max = sensor.maxTemperature ?? sensor.thresholds?.temperature?.max;
+        metricLabel = 'Temperature';
+    } else {
+        value = reading.humidity;
+        unit = '%';
+        min = sensor.minHumidity ?? sensor.thresholds?.humidity?.min;
+        max = sensor.maxHumidity ?? sensor.thresholds?.humidity?.max;
+        metricLabel = 'Humidity';
+    }
+    // Fallbacks for missing data
+    const formatVal = v => (v == null || Number.isNaN(v) ? 'N/A' : Number(v).toFixed(2));
+    value = formatVal(value);
+    min = formatVal(min);
+    max = formatVal(max);
+    unit = unit || '';
+
+    const alertMessage = `Alert for sensor "${sensor.sensorId}" in zone "${zone.name}": ${metricLabel} of ${value}${unit} is outside the safe range of ${min}${unit} to ${max}${unit}. Please check the dashboard.`;
 
     users.forEach(user => {
         if (user.email) {
@@ -69,77 +85,80 @@ const checkAlerts = async () => {
                 continue;
             }
 
-            const isTemp = sensor.type === 'temperature';
-            const rawValue = isTemp ? reading.temperature : reading.humidity;
-            const value = typeof rawValue === 'string' ? Number(rawValue) : rawValue;
-            if (value == null || Number.isNaN(value)) {
-                console.log(`Invalid reading value for sensor ${sensor.sensorId}:`, rawValue);
-                continue;
-            }
-
-            // Support both legacy top-level fields and the nested thresholds object
-            const min = isTemp
-                ? (sensor.minTemperature ?? sensor.thresholds?.temperature?.min)
-                : (sensor.minHumidity ?? sensor.thresholds?.humidity?.min);
-            const max = isTemp
-                ? (sensor.maxTemperature ?? sensor.thresholds?.temperature?.max)
-                : (sensor.maxHumidity ?? sensor.thresholds?.humidity?.max);
-
-            if (min == null && max == null) {
-                console.log(`Skipping sensor ${sensor.sensorId} — no thresholds configured.`);
-                continue;
-            }
-
-            const isBreached = (min != null && value < min) || (max != null && value > max);
-
-            const existingAlert = await Alert.findOne({ sensor: sensor._id, status: { $ne: 'resolved' } });
-
-            if (isBreached) {
-                let alert = existingAlert;
-                let escalationChanged = false;
-
-                if (!alert) {
-                    alert = new Alert({
-                        sensor: sensor._id,
-                        zone: sensor.zone._id,
-                        status: 'triggered',
-                        severity: 'medium',
-                        escalationLevel: 'Operator',
-                        triggeredAt: new Date(),
-                        history: [{ status: 'triggered', timestamp: new Date(), notes: `Initial breach detected. Value: ${value}` }],
-                        consecutiveBreaches: 1,
-                    });
-                    escalationChanged = true; // New alert, so notify
-                } else {
-                    alert.consecutiveBreaches += 1;
-
-                    if (alert.consecutiveBreaches >= 6 && alert.escalationLevel !== 'Admin') {
-                        alert.escalationLevel = 'Admin';
-                        alert.history.push({ status: 'escalated', timestamp: new Date(), notes: 'Escalated to Admin' });
-                        escalationChanged = true;
-                    } else if (alert.consecutiveBreaches >= 3 && alert.escalationLevel === 'Operator') {
-                        alert.escalationLevel = 'Manager';
-                        alert.history.push({ status: 'escalated', timestamp: new Date(), notes: 'Escalated to Manager' });
-                        escalationChanged = true;
-                    }
+            // Check both temperature and humidity for every sensor
+            for (const metric of ['temperature', 'humidity']) {
+                let value = metric === 'temperature' ? reading.temperature : reading.humidity;
+                value = typeof value === 'string' ? Number(value) : value;
+                if (value == null || Number.isNaN(value)) {
+                    console.log(`Invalid ${metric} value for sensor ${sensor.sensorId}:`, value);
+                    continue;
                 }
 
-                await alert.save();
-                await notifyMainApp('alert-update', alert);
+                let min = metric === 'temperature'
+                    ? (sensor.minTemperature ?? sensor.thresholds?.temperature?.min)
+                    : (sensor.minHumidity ?? sensor.thresholds?.humidity?.min);
+                let max = metric === 'temperature'
+                    ? (sensor.maxTemperature ?? sensor.thresholds?.temperature?.max)
+                    : (sensor.maxHumidity ?? sensor.thresholds?.humidity?.max);
 
-                if (escalationChanged) {
-                    const usersToNotify = await findUsersToNotify(sensor.zone._id, alert.escalationLevel);
-                    if (usersToNotify.length > 0) {
-                        sendAllNotifications(usersToNotify, sensor, reading, alert, sensor.zone);
-                    }
+                if (min == null && max == null) {
+                    console.log(`Skipping sensor ${sensor.sensorId} — no ${metric} thresholds configured.`);
+                    continue;
                 }
-            } else if (existingAlert) {
-                existingAlert.status = 'resolved';
-                existingAlert.resolvedAt = new Date();
-                existingAlert.consecutiveBreaches = 0;
-                existingAlert.history.push({ status: 'resolved', timestamp: new Date(), notes: 'Sensor reading returned to normal.' });
-                await existingAlert.save();
-                await notifyMainApp('alert-update', existingAlert);
+
+                const isBreached = (min != null && value < min) || (max != null && value > max);
+
+                // Use a unique alert per sensor+metric (optional: add metric to alert if needed)
+                const existingAlert = await Alert.findOne({ sensor: sensor._id, status: { $ne: 'resolved' }, metric });
+
+                if (isBreached) {
+                    let alert = existingAlert;
+                    let escalationChanged = false;
+
+                    if (!alert) {
+                        alert = new Alert({
+                            sensor: sensor._id,
+                            zone: sensor.zone._id,
+                            status: 'triggered',
+                            severity: 'medium',
+                            escalationLevel: 'Operator',
+                            triggeredAt: new Date(),
+                            history: [{ status: 'triggered', timestamp: new Date(), notes: `Initial breach detected. Value: ${value}` }],
+                            consecutiveBreaches: 1,
+                            metric,
+                        });
+                        escalationChanged = true; // New alert, so notify
+                    } else {
+                        alert.consecutiveBreaches += 1;
+
+                        if (alert.consecutiveBreaches >= 6 && alert.escalationLevel !== 'Admin') {
+                            alert.escalationLevel = 'Admin';
+                            alert.history.push({ status: 'escalated', timestamp: new Date(), notes: 'Escalated to Admin' });
+                            escalationChanged = true;
+                        } else if (alert.consecutiveBreaches >= 3 && alert.escalationLevel === 'Operator') {
+                            alert.escalationLevel = 'Manager';
+                            alert.history.push({ status: 'escalated', timestamp: new Date(), notes: 'Escalated to Manager' });
+                            escalationChanged = true;
+                        }
+                    }
+
+                    await alert.save();
+                    await notifyMainApp('alert-update', alert);
+
+                    if (escalationChanged) {
+                        const usersToNotify = await findUsersToNotify(sensor.zone._id, alert.escalationLevel);
+                        if (usersToNotify.length > 0) {
+                            sendAllNotifications(usersToNotify, sensor, reading, alert, sensor.zone, metric);
+                        }
+                    }
+                } else if (existingAlert) {
+                    existingAlert.status = 'resolved';
+                    existingAlert.resolvedAt = new Date();
+                    existingAlert.consecutiveBreaches = 0;
+                    existingAlert.history.push({ status: 'resolved', timestamp: new Date(), notes: 'Sensor reading returned to normal.' });
+                    await existingAlert.save();
+                    await notifyMainApp('alert-update', existingAlert);
+                }
             }
         }
     } catch (error) {
