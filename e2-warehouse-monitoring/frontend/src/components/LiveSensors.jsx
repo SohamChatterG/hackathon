@@ -78,37 +78,52 @@ const LiveSensors = () => {
     const sensors = Object.values(sensorsMap);
 
     return (
-        <div className="card">
-            <h2 className="card-title">Live Sensor Status</h2>
-            <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem' }}>
-                <KPI label="Sensors" value={sensors.length} />
-                <KPI label="With Data" value={sensors.filter(s => s.temperature != null).length} />
-                <KPI label="Avg Temp (shown)" value={
-                    (() => {
+        <div className="card" style={{background:'linear-gradient(135deg, #101624 60%, #0a0e1a 100%)',boxShadow:'0 2px 32px 0 #000a1f66',borderRadius:'22px',padding:'2.2rem 2.2rem 1.7rem 2.2rem',maxWidth:'100vw'}}>
+            <h2 className="card-title" style={{fontSize:'2rem',fontWeight:'bold',background:'linear-gradient(90deg,#60A5FA,#0ea5b7)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:'1.7rem'}}>Live Sensor Status</h2>
+            <div style={{ marginBottom: '2.2rem', display: 'flex', gap: '4.5rem', justifyContent:'center' }}>
+                <div style={{textAlign:'center'}}>
+                    <div style={{fontSize:'3.2rem',fontWeight:'bold',color:'#60A5FA',marginBottom:2}}>{sensors.length}</div>
+                    <div style={{fontSize:'1.1rem',color:'var(--text-medium)'}}>Sensors</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                    <div style={{fontSize:'3.2rem',fontWeight:'bold',color:'#22c55e',marginBottom:2}}>{sensors.filter(s => s.temperature != null).length}</div>
+                    <div style={{fontSize:'1.1rem',color:'var(--text-medium)'}}>With Data</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                    <div style={{fontSize:'3.2rem',fontWeight:'bold',color:'#fff',marginBottom:2}}>{(() => {
                         const temps = sensors.filter(s => s.temperature != null).map(s => Number(s.temperature));
                         if (temps.length === 0) return '—';
                         const avg = temps.reduce((a, b) => a + b, 0) / temps.length;
-                        return avg.toFixed(1) + ' °C';
-                    })()
-                } />
+                        return avg.toFixed(1);
+                    })()}</div>
+                    <div style={{fontSize:'1.1rem',color:'var(--text-medium)'}}>Avg Temp (shown) <span style={{fontSize:'1rem',color:'var(--text-dark)'}}>°C</span></div>
+                </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '1.2rem', justifyContent:'center', alignItems:'stretch', width:'100%' }}>
                 {sensors.map(sensor => (
-                    <div key={sensor.sensorId} style={{ padding: '1rem', backgroundColor: '#374151', borderRadius: '0.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3 style={{ margin: 0, fontWeight: '700' }}>{sensor.sensorId}</h3>
-                            <small style={{ color: 'var(--text-medium)' }}>{sensor.warehouseId}</small>
+                    <div key={sensor.sensorId} className="sensor-card-loveable" style={{ padding: '1.2rem 1.2rem 1rem 1.2rem', background: 'rgba(18,28,48,0.98)', borderRadius: '16px', boxShadow: '0 2px 18px 0 #000a1f44', transition:'box-shadow 0.22s, border-color 0.22s', border:'2px solid #22304a', position:'relative', cursor:'pointer', minHeight:'170px', display:'flex',flexDirection:'column',justifyContent:'space-between', maxWidth:'100%' }}
+                        onMouseOver={e => e.currentTarget.style.boxShadow = '0 0 0 3px #60A5FA, 0 6px 32px 0 #60A5FA99'}
+                        onMouseOut={e => e.currentTarget.style.boxShadow = '0 2px 18px 0 #000a1f44'}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom:'0.7rem' }}>
+                            <h3 style={{ margin: 0, fontWeight: '700', fontSize:'1.25rem', color:'#60A5FA', letterSpacing:'0.5px' }}>{sensor.sensorId}</h3>
+                            <span style={{ background:'#1e293b', color:'#60FAAD', borderRadius:'999px', padding:'0.22rem 1.1rem', fontSize:'1.05rem', fontWeight:600, letterSpacing:'0.2px', boxShadow:'0 0 0 2px #22304a' }}>{sensor.warehouseId}</span>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
-                            <div style={{ fontSize: '1.6rem', fontWeight: '700' }}>{sensor.temperature != null ? Number(sensor.temperature).toFixed(1) + ' 0C' : '—'}</div>
-                            <div style={{ fontSize: '1.6rem', fontWeight: '700' }}>{sensor.temperature != null ? Number(sensor.temperature).toFixed(1) + ' °C' : '—'}</div>
-                            <div style={{ fontSize: '1.2rem', color: 'var(--text-medium)' }}>{sensor.humidity != null ? Number(sensor.humidity).toFixed(1) + ' %' : '—'}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns:'1fr 1fr', gap:'2.2rem', alignItems: 'center', margin:'1.2rem 0 0.7rem 0' }}>
+                            <div style={{ textAlign:'center' }}>
+                                <div style={{ fontSize:'2.7rem', fontWeight:'bold', color:'#fff', letterSpacing:'-1px' }}>{sensor.temperature != null ? Number(sensor.temperature).toFixed(1) : '—'}</div>
+                                <div style={{ fontSize:'1.1rem', color:'#60A5FA', fontWeight:500 }}>°C</div>
+                            </div>
+                            <div style={{ textAlign:'center' }}>
+                                <div style={{ fontSize:'2.7rem', fontWeight:'bold', color:'#fff', letterSpacing:'-1px' }}>{sensor.humidity != null ? Number(sensor.humidity).toFixed(1) : '—'}</div>
+                                <div style={{ fontSize:'1.1rem', color:'#60A5FA', fontWeight:500 }}>%</div>
+                            </div>
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.6rem', alignItems: 'center' }}>
-                            <small style={{ color: '#6b7280' }}>{sensor.timestamp ? new Date(sensor.timestamp).toLocaleTimeString() : 'No recent data'}</small>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5rem', alignItems: 'center', borderTop:'1.5px solid #22304a', paddingTop:'1rem' }}>
+                            <small style={{ color: '#60A5FA', fontWeight:500 }}>{sensor.timestamp ? new Date(sensor.timestamp).toLocaleTimeString() : 'No recent data'}</small>
                             <button
                                 onClick={async () => {
                                     setMetric('temperature');
@@ -119,7 +134,9 @@ const LiveSensors = () => {
                                     if (hist) setHistoryMap(m => ({ ...m, [sensor.sensorId]: hist }));
                                 }}
                                 className="button-secondary"
-                                style={{ padding: '0.25rem 0.6rem' }}
+                                style={{ padding: '0.55rem 1.5rem', fontWeight:600, fontSize:'1.1rem', borderRadius:'10px', background:'rgba(96,165,250,0.12)', color:'#60A5FA', border:'1.5px solid #60A5FA', boxShadow:'0 0 0 0 #60A5FA', transition:'background 0.18s, color 0.18s, border 0.18s' }}
+                                onMouseOver={e => {e.currentTarget.style.background='#60A5FA';e.currentTarget.style.color='#fff';}}
+                                onMouseOut={e => {e.currentTarget.style.background='rgba(96,165,250,0.12)';e.currentTarget.style.color='#60A5FA';}}
                             >
                                 Details
                             </button>
