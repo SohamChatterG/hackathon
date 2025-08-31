@@ -184,40 +184,35 @@ const LiveSensors = () => {
                     };
 
                     return (
-                        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(2,6,23,0.6)' }}>
-                            <div style={{ width: '720px', maxWidth: '95%', background: '#0f1724', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 6px 18px rgba(0,0,0,0.6)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <h3 style={{ margin: 0 }}>{sensorId} — Recent Activity</h3>
-                                    <div>
-                                        <button className="button-secondary" onClick={() => setExpandedSensor(null)} style={{ marginRight: '0.5rem' }}>Close</button>
-                                    </div>
+                        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(2,6,23,0.7)', zIndex: 1000 }}>
+                            <div style={{ width: '1200px', maxWidth: '99vw', background: 'linear-gradient(135deg, #101624 60%, #0a0e1a 100%)', padding: '2.7rem 2.7rem 1.8rem 2.7rem', borderRadius: '1.5rem', boxShadow: '0 2px 32px 0 #000a1f66', border: '2.5px solid #22304a', minHeight: '520px', maxHeight: '96vh', display: 'flex', flexDirection: 'column', gap: '1.7rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.7rem' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 700, background: 'linear-gradient(90deg,#60A5FA,#0ea5b7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{sensorId} — Recent Activity</h3>
+                                    <button className="button-secondary" onClick={() => setExpandedSensor(null)} style={{ fontSize: '1.1rem', padding: '0.45rem 1.2rem', borderRadius: '8px', background: '#19223a', color: '#fff', border: '1.5px solid #60A5FA', fontWeight: 600 }}>Close</button>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: '1rem', marginTop: '0.75rem' }}>
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <button className={metric === 'temperature' ? 'button small' : 'button-secondary small'} onClick={() => setMetric('temperature')}>Temperature</button>
-                                                <button className={metric === 'humidity' ? 'button small' : 'button-secondary small'} onClick={() => setMetric('humidity')}>Humidity</button>
-                                            </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '3.5fr 0.7fr', gap: '1.2rem', alignItems: 'start', height: '410px' }}>
+                                    <div className="sensor-modal-section-hover" style={{ background: 'rgba(18,28,48,0.98)', borderRadius: '1.2rem', boxShadow: '0 2px 18px 0 #000a1f44', padding: '1.4rem 1.4rem 1rem 1.4rem', border: '2px solid #22304a', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', transition: 'box-shadow 0.22s, border-color 0.22s' }}>
+                                        <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1.1rem' }}>
+                                            <button className={metric === 'temperature' ? 'button' : 'button-secondary'} style={{ fontSize: '1.05rem', padding: '0.38rem 1.2rem', borderRadius: '8px', fontWeight: 600, background: metric === 'temperature' ? 'linear-gradient(90deg,#60A5FA,#0ea5b7)' : 'rgba(96,165,250,0.12)', color: metric === 'temperature' ? '#fff' : '#60A5FA', border: '1.5px solid #60A5FA', transition: 'all 0.18s' }} onClick={() => setMetric('temperature')}>Temperature</button>
+                                            <button className={metric === 'humidity' ? 'button' : 'button-secondary'} style={{ fontSize: '1.05rem', padding: '0.38rem 1.2rem', borderRadius: '8px', fontWeight: 600, background: metric === 'humidity' ? 'linear-gradient(90deg,#60A5FA,#0ea5b7)' : 'rgba(96,165,250,0.12)', color: metric === 'humidity' ? '#fff' : '#60A5FA', border: '1.5px solid #60A5FA', transition: 'all 0.18s' }} onClick={() => setMetric('humidity')}>Humidity</button>
                                         </div>
-
-                                        <div style={{ height: 140 }}>
+                                        <div style={{ height: 'calc(100% - 60px)', minHeight: 180, background: 'rgba(255,255,255,0.01)', borderRadius: '1rem', boxShadow: '0 0 0 2px #22304a, 0 8px 40px 0 #60A5FA33', marginBottom: '0.5rem' }}>
                                             <Sparkline values={(metric === 'temperature' ? temps : hums)} color={metric === 'temperature' ? '#60A5FA' : '#34D399'} />
                                         </div>
-                                        <div style={{ marginTop: '0.5rem', color: 'var(--text-medium)' }}>Showing last {history.length} readings (most recent on right)</div>
+                                        <div style={{ marginTop: '0.5rem', color: 'var(--text-medium)', fontSize: '1rem' }}>Showing last {history.length} readings (most recent on right)</div>
                                     </div>
-                                    <div style={{ background: '#071026', padding: '0.6rem', borderRadius: 6 }}>
-                                        <h4 style={{ marginTop: 0 }}>KPIs</h4>
+                                    <div className="sensor-modal-section-hover" style={{ background: '#071026', padding: '0.7rem 0.7rem 0.7rem 0.7rem', borderRadius: '1.2rem', boxShadow: '0 2px 18px 0 #000a1f44', border: '2px solid #22304a', height: '100%', display: 'flex', flexDirection: 'column', gap: '0.7rem', justifyContent: 'center', transition: 'box-shadow 0.22s, border-color 0.22s' }}>
+                                        <h4 style={{ marginTop: 0, fontSize: '1.1rem', fontWeight: 700, color: '#60A5FA', letterSpacing: '0.5px' }}>KPIs</h4>
                                         {metric === 'temperature' ? (
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                                                <div style={{ fontSize: '0.95rem' }}>Avg (°C)</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.7rem', fontSize: '1.05rem' }}>
+                                                <div>Avg (°C)</div>
                                                 <div style={{ fontWeight: 700 }}>{agg ? (agg.avgTemp ? agg.avgTemp.toFixed(2) + ' °C' : '—') : (temps.length ? (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(2) + ' °C' : '—')}</div>
-                                                <div style={{ fontSize: '0.95rem' }}>Min (°C)</div>
+                                                <div>Min (°C)</div>
                                                 <div style={{ fontWeight: 700 }}>{agg ? (agg.minTemp ?? '—') + ' °C' : (temps.length ? Math.min(...temps).toFixed(2) + ' °C' : '—')}</div>
-                                                <div style={{ fontSize: '0.95rem' }}>Max (°C)</div>
+                                                <div>Max (°C)</div>
                                                 <div style={{ fontWeight: 700 }}>{agg ? (agg.maxTemp ?? '—') + ' °C' : (temps.length ? Math.max(...temps).toFixed(2) + ' °C' : '—')}</div>
-                                                <div style={{ fontSize: '0.95rem' }}>Count</div>
+                                                <div>Count</div>
                                                 <div style={{ fontWeight: 700 }}>{agg ? (agg.count ?? 0) : temps.length}</div>
                                             </div>
                                         ) : (

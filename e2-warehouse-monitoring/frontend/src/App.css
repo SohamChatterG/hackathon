@@ -1,3 +1,8 @@
+/* Glow effect for sensor modal sections on hover */
+.sensor-modal-section-hover:hover {
+  box-shadow: 0 0 0 3px #60A5FA, 0 8px 32px 0 #60A5FA99 !important;
+  border-color: #60A5FA !important;
+}
 .landing-header-distinct {
   background: rgba(10, 20, 40, 0.92);
   box-shadow: 0 2px 24px 0 #000a1f33;
