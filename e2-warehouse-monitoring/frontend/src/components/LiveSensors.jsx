@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api/apiClient';
+import { useAuth } from '../context/AuthContext';
 
 const KPI = ({ label, value }) => (
     <div style={{ textAlign: 'center' }}>
@@ -8,15 +9,22 @@ const KPI = ({ label, value }) => (
     </div>
 );
 
+
 const LiveSensors = () => {
+    const { user } = useAuth();
     const [sensorsMap, setSensorsMap] = useState({}); // keyed by sensorId
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                // 1) fetch all registered sensors (to show a card for each)
-                const sensorsRes = await apiClient.get('/sensors');
+                // Use /sensors/assigned for Operator, /sensors for Admin/Manager
+                let sensorsRes;
+                if (user?.role === 'Operator') {
+                    sensorsRes = await apiClient.get('/sensors/assigned');
+                } else {
+                    sensorsRes = await apiClient.get('/sensors');
+                }
                 const sensors = sensorsRes.data.data || [];
 
                 // 2) fetch latest readings
@@ -44,7 +52,8 @@ const LiveSensors = () => {
             }
         };
         fetchAll();
-    }, []);
+        // Only re-run if user changes
+    }, [user]);
 
     // The "rectangles" you see in the screenshots are the sensor cards (left) and KPI/detail cards (right) —
     // each card is a styled <div> with a .card-like appearance showing sensor metadata and readings.
@@ -52,6 +61,7 @@ const LiveSensors = () => {
     const [historyMap, setHistoryMap] = useState({});
     const [aggMap, setAggMap] = useState({});
     const [metric, setMetric] = useState('temperature'); // 'temperature' or 'humidity' for the modal
+    const [historyRange, setHistoryRange] = useState('24h'); // '6h', '12h', '24h', '7d', '14d'
 
     const loadAggregates = async (sensorId) => {
         try {
@@ -78,37 +88,52 @@ const LiveSensors = () => {
     const sensors = Object.values(sensorsMap);
 
     return (
-        <div className="card">
-            <h2 className="card-title">Live Sensor Status</h2>
-            <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem' }}>
-                <KPI label="Sensors" value={sensors.length} />
-                <KPI label="With Data" value={sensors.filter(s => s.temperature != null).length} />
-                <KPI label="Avg Temp (shown)" value={
-                    (() => {
+        <div className="card" style={{background:'linear-gradient(135deg, #101624 60%, #0a0e1a 100%)',boxShadow:'0 2px 32px 0 #000a1f66',borderRadius:'22px',padding:'2.2rem 2.2rem 1.7rem 2.2rem',maxWidth:'100vw'}}>
+            <h2 className="card-title" style={{fontSize:'2rem',fontWeight:'bold',background:'linear-gradient(90deg,#60A5FA,#0ea5b7)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:'1.7rem'}}>Live Sensor Status</h2>
+            <div style={{ marginBottom: '2.2rem', display: 'flex', gap: '4.5rem', justifyContent:'center' }}>
+                <div style={{textAlign:'center'}}>
+                    <div style={{fontSize:'3.2rem',fontWeight:'bold',color:'#60A5FA',marginBottom:2}}>{sensors.length}</div>
+                    <div style={{fontSize:'1.1rem',color:'var(--text-medium)'}}>Sensors</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                    <div style={{fontSize:'3.2rem',fontWeight:'bold',color:'#22c55e',marginBottom:2}}>{sensors.filter(s => s.temperature != null).length}</div>
+                    <div style={{fontSize:'1.1rem',color:'var(--text-medium)'}}>With Data</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                    <div style={{fontSize:'3.2rem',fontWeight:'bold',color:'#fff',marginBottom:2}}>{(() => {
                         const temps = sensors.filter(s => s.temperature != null).map(s => Number(s.temperature));
                         if (temps.length === 0) return '—';
                         const avg = temps.reduce((a, b) => a + b, 0) / temps.length;
-                        return avg.toFixed(1) + ' °C';
-                    })()
-                } />
+                        return avg.toFixed(1);
+                    })()}</div>
+                    <div style={{fontSize:'1.1rem',color:'var(--text-medium)'}}>Avg Temp (shown) <span style={{fontSize:'1rem',color:'var(--text-dark)'}}>°C</span></div>
+                </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '1.2rem', justifyContent:'center', alignItems:'stretch', width:'100%' }}>
                 {sensors.map(sensor => (
-                    <div key={sensor.sensorId} style={{ padding: '1rem', backgroundColor: '#374151', borderRadius: '0.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3 style={{ margin: 0, fontWeight: '700' }}>{sensor.sensorId}</h3>
-                            <small style={{ color: 'var(--text-medium)' }}>{sensor.warehouseId}</small>
+                    <div key={sensor.sensorId} className="sensor-card-loveable" style={{ padding: '1.2rem 1.2rem 1rem 1.2rem', background: 'rgba(18,28,48,0.98)', borderRadius: '16px', boxShadow: '0 2px 18px 0 #000a1f44', transition:'box-shadow 0.22s, border-color 0.22s', border:'2px solid #22304a', position:'relative', cursor:'pointer', minHeight:'170px', display:'flex',flexDirection:'column',justifyContent:'space-between', maxWidth:'100%' }}
+                        onMouseOver={e => e.currentTarget.style.boxShadow = '0 0 0 3px #60A5FA, 0 6px 32px 0 #60A5FA99'}
+                        onMouseOut={e => e.currentTarget.style.boxShadow = '0 2px 18px 0 #000a1f44'}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom:'0.7rem' }}>
+                            <h3 style={{ margin: 0, fontWeight: '700', fontSize:'1.25rem', color:'#60A5FA', letterSpacing:'0.5px' }}>{sensor.sensorId}</h3>
+                            <span style={{ background:'#1e293b', color:'#60FAAD', borderRadius:'999px', padding:'0.22rem 1.1rem', fontSize:'1.05rem', fontWeight:600, letterSpacing:'0.2px', boxShadow:'0 0 0 2px #22304a' }}>{sensor.warehouseId}</span>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
-                            <div style={{ fontSize: '1.6rem', fontWeight: '700' }}>{sensor.temperature != null ? Number(sensor.temperature).toFixed(1) + ' 0C' : '—'}</div>
-                            <div style={{ fontSize: '1.6rem', fontWeight: '700' }}>{sensor.temperature != null ? Number(sensor.temperature).toFixed(1) + ' °C' : '—'}</div>
-                            <div style={{ fontSize: '1.2rem', color: 'var(--text-medium)' }}>{sensor.humidity != null ? Number(sensor.humidity).toFixed(1) + ' %' : '—'}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns:'1fr 1fr', gap:'2.2rem', alignItems: 'center', margin:'1.2rem 0 0.7rem 0' }}>
+                            <div style={{ textAlign:'center' }}>
+                                <div style={{ fontSize:'2.7rem', fontWeight:'bold', color:'#fff', letterSpacing:'-1px' }}>{sensor.temperature != null ? Number(sensor.temperature).toFixed(1) : '—'}</div>
+                                <div style={{ fontSize:'1.1rem', color:'#60A5FA', fontWeight:500 }}>°C</div>
+                            </div>
+                            <div style={{ textAlign:'center' }}>
+                                <div style={{ fontSize:'2.7rem', fontWeight:'bold', color:'#fff', letterSpacing:'-1px' }}>{sensor.humidity != null ? Number(sensor.humidity).toFixed(1) : '—'}</div>
+                                <div style={{ fontSize:'1.1rem', color:'#60A5FA', fontWeight:500 }}>%</div>
+                            </div>
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.6rem', alignItems: 'center' }}>
-                            <small style={{ color: '#6b7280' }}>{sensor.timestamp ? new Date(sensor.timestamp).toLocaleTimeString() : 'No recent data'}</small>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5rem', alignItems: 'center', borderTop:'1.5px solid #22304a', paddingTop:'1rem' }}>
+                            <small style={{ color: '#60A5FA', fontWeight:500 }}>{sensor.timestamp ? new Date(sensor.timestamp).toLocaleString() : 'No recent data'}</small>
                             <button
                                 onClick={async () => {
                                     setMetric('temperature');
@@ -119,7 +144,9 @@ const LiveSensors = () => {
                                     if (hist) setHistoryMap(m => ({ ...m, [sensor.sensorId]: hist }));
                                 }}
                                 className="button-secondary"
-                                style={{ padding: '0.25rem 0.6rem' }}
+                                style={{ padding: '0.55rem 1.5rem', fontWeight:600, fontSize:'1.1rem', borderRadius:'10px', background:'rgba(96,165,250,0.12)', color:'#60A5FA', border:'1.5px solid #60A5FA', boxShadow:'0 0 0 0 #60A5FA', transition:'background 0.18s, color 0.18s, border 0.18s' }}
+                                onMouseOver={e => {e.currentTarget.style.background='#60A5FA';e.currentTarget.style.color='#fff';}}
+                                onMouseOut={e => {e.currentTarget.style.background='rgba(96,165,250,0.12)';e.currentTarget.style.color='#60A5FA';}}
                             >
                                 Details
                             </button>
@@ -133,74 +160,193 @@ const LiveSensors = () => {
                     const history = (historyMap[sensorId] || []).slice().reverse(); // oldest -> newest
                     const agg = aggMap[sensorId];
 
-                    const temps = history.map(h => Number(h.temperature)).filter(n => !Number.isNaN(n));
-                    const hums = history.map(h => Number(h.humidity)).filter(n => !Number.isNaN(n));
+                    // Time range filtering
+                    const now = Date.now();
+                    const rangeOptions = [
+                        { label: '6h', ms: 6 * 60 * 60 * 1000 },
+                        { label: '12h', ms: 12 * 60 * 60 * 1000 },
+                        { label: '24h', ms: 24 * 60 * 60 * 1000 },
+                        { label: '7d', ms: 7 * 24 * 60 * 60 * 1000 },
+                        { label: '14d', ms: 14 * 24 * 60 * 60 * 1000 },
+                    ];
+                    const selectedRange = rangeOptions.find(r => r.label === historyRange) || rangeOptions[2];
+                    const filteredHistory = history.filter(h => {
+                        if (!h.timestamp) return false;
+                        const t = new Date(h.timestamp).getTime();
+                        return now - t <= selectedRange.ms;
+                    });
 
-                    const Sparkline = ({ values = [], color = '#60A5FA' }) => {
+                    const temps = filteredHistory.map(h => Number(h.temperature)).filter(n => !Number.isNaN(n));
+                    const hums = filteredHistory.map(h => Number(h.humidity)).filter(n => !Number.isNaN(n));
+
+                    const Sparkline = ({ values = [], color = '#60A5FA', history = [], yLabel = '' }) => {
+                        const [hover, setHover] = React.useState(null);
                         if (!values || values.length === 0) return <div style={{ color: 'var(--text-medium)' }}>No history</div>;
-                        const width = 600, height = 96, padding = 6;
+                        const width = 900, height = 260, padding = 36, labelPad = 16;
                         const max = Math.max(...values);
                         const min = Math.min(...values);
                         const range = max - min || 1;
                         const coords = values.map((v, i) => {
                             const x = padding + (i * (width - padding * 2) / (values.length - 1 || 1));
                             const y = padding + (1 - (v - min) / range) * (height - padding * 2);
-                            return { x, y, v };
+                            return { x, y, v, t: history[i]?.timestamp, idx: i };
                         });
 
                         const linePoints = coords.map(p => `${p.x},${p.y}`).join(' ');
                         // polygon for area fill (baseline back to left)
                         const areaPoints = `${coords.map(p => `${p.x},${p.y}`).join(' ')} ${coords[coords.length - 1].x},${height - padding} ${coords[0].x},${height - padding}`;
 
+                        // Y-axis ticks (5 steps)
+                        const yTicks = 5;
+                        const yTickVals = Array.from({length: yTicks}, (_, i) => min + (range * (yTicks-1-i)/(yTicks-1)));
+                        // X-axis ticks (5 steps)
+                        const xTicks = 5;
+                        const xTickIdxs = Array.from({length: xTicks}, (_, i) => Math.round(i * (coords.length-1)/(xTicks-1)));
+
+                        // Tooltip logic
+                        const handleMouseMove = (e) => {
+                            const rect = e.target.getBoundingClientRect();
+                            const mouseX = e.clientX - rect.left;
+                            // Find closest point
+                            let closest = null;
+                            let minDist = Infinity;
+                            for (const pt of coords) {
+                                const dist = Math.abs(pt.x - mouseX);
+                                if (dist < minDist) {
+                                    minDist = dist;
+                                    closest = pt;
+                                }
+                            }
+                            setHover(closest);
+                        };
+                        const handleMouseLeave = () => setHover(null);
+
                         return (
-                            <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 6 }}>
-                                <defs>
-                                    <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
-                                        <stop offset="0%" stopColor={color} stopOpacity="0.28" />
-                                        <stop offset="100%" stopColor={color} stopOpacity="0.04" />
-                                    </linearGradient>
-                                </defs>
-                                <polygon points={areaPoints} fill="url(#g1)" />
-                                <polyline fill="none" stroke={color} strokeWidth="2.2" points={linePoints} strokeLinejoin="round" strokeLinecap="round" />
-                            </svg>
+                            <div style={{ position: 'relative', width: '100%', height: height + 32, minWidth: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' }}>
+                                <svg
+                                    width={width}
+                                    height={height}
+                                    viewBox={`0 0 ${width} ${height}`}
+                                    style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, display: 'block', margin: '0 auto', width: '100%', height: '100%' }}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseLeave={handleMouseLeave}
+                                >
+                                    <defs>
+                                        <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+                                            <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+                                            <stop offset="100%" stopColor={color} stopOpacity="0.04" />
+                                        </linearGradient>
+                                    </defs>
+                                    {/* Y axis grid and labels */}
+                                    {yTickVals.map((v, i) => {
+                                        const y = padding + (1 - (v - min) / range) * (height - padding * 2);
+                                        return (
+                                            <g key={i}>
+                                                <line x1={padding-2} x2={width-padding+2} y1={y} y2={y} stroke="#233041" strokeDasharray="2,3" strokeWidth="1" />
+                                                <text x={labelPad} y={y+4} fontSize="13" fill="#60A5FA" fontWeight="600" textAnchor="start" style={{filter:'drop-shadow(0 0 2px #000)'}}>{v.toFixed(2)}</text>
+                                            </g>
+                                        );
+                                    })}
+                                    {/* X axis grid and labels */}
+                                    {xTickIdxs.map((idx, i) => {
+                                        const x = coords[idx]?.x;
+                                        let label = '';
+                                        if (coords[idx]?.t) {
+                                            const d = new Date(coords[idx].t);
+                                            label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                        }
+                                        return (
+                                            <g key={i}>
+                                                <line x1={x} x2={x} y1={padding-2} y2={height-padding+2} stroke="#233041" strokeDasharray="2,3" strokeWidth="1" />
+                                                <text x={x} y={height-labelPad+24} fontSize="14" fill="#60A5FA" fontWeight="600" textAnchor="middle" style={{filter:'drop-shadow(0 0 2px #000)'}}>{label}</text>
+                                            </g>
+                                        );
+                                    })}
+                                    {/* Y axis label */}
+                                    <text x={labelPad} y={padding-18} fontSize="14" fill="#60A5FA" fontWeight="700" textAnchor="start" style={{filter:'drop-shadow(0 0 2px #000)'}}>{yLabel}</text>
+                                    <polygon points={areaPoints} fill="url(#g1)" />
+                                    <polyline fill="none" stroke={color} strokeWidth="2.2" points={linePoints} strokeLinejoin="round" strokeLinecap="round" />
+                                    {/* Tooltip marker */}
+                                    {hover && (
+                                        <g>
+                                            <circle cx={hover.x} cy={hover.y} r="6" fill="#fff" fillOpacity="0.9" stroke={color} strokeWidth="2" />
+                                            <line x1={hover.x} x2={hover.x} y1={padding} y2={height-padding} stroke="#60A5FA" strokeDasharray="2,2" strokeWidth="1.2" />
+                                        </g>
+                                    )}
+                                </svg>
+                                {/* Tooltip box */}
+                                {hover && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        left: hover.x + 12,
+                                        top: hover.y - 32,
+                                        background: 'rgba(18,28,48,0.98)',
+                                        color: '#fff',
+                                        border: '1.5px solid #60A5FA',
+                                        borderRadius: 8,
+                                        padding: '0.5rem 0.9rem',
+                                        fontSize: '1rem',
+                                        fontWeight: 600,
+                                        pointerEvents: 'none',
+                                        zIndex: 10,
+                                        minWidth: 120,
+                                        boxShadow: '0 2px 12px 0 #000a1f44',
+                                    }}>
+                                        <div style={{ color: color, fontWeight: 700 }}>{yLabel.split(' ')[0]}: {hover.v.toFixed(2)}</div>
+                                        {hover.t && <div style={{ color: '#60A5FA', fontSize: '0.98rem', marginTop: 2 }}>{new Date(hover.t).toLocaleString()}</div>}
+                                    </div>
+                                )}
+                            </div>
                         );
                     };
 
                     return (
-                        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(2,6,23,0.6)' }}>
-                            <div style={{ width: '720px', maxWidth: '95%', background: '#0f1724', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 6px 18px rgba(0,0,0,0.6)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <h3 style={{ margin: 0 }}>{sensorId} — Recent Activity</h3>
-                                    <div>
-                                        <button className="button-secondary" onClick={() => setExpandedSensor(null)} style={{ marginRight: '0.5rem' }}>Close</button>
-                                    </div>
+                        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(2,6,23,0.7)', zIndex: 1000 }}>
+                            <div style={{ width: '1200px', maxWidth: '99vw', background: 'linear-gradient(135deg, #101624 60%, #0a0e1a 100%)', padding: '2.7rem 2.7rem 1.8rem 2.7rem', borderRadius: '1.5rem', boxShadow: '0 2px 32px 0 #000a1f66', border: '2.5px solid #22304a', minHeight: '520px', maxHeight: '96vh', display: 'flex', flexDirection: 'column', gap: '1.7rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.7rem' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 700, background: 'linear-gradient(90deg,#60A5FA,#0ea5b7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{sensorId} — Recent Activity</h3>
+                                    <button className="button-secondary" onClick={() => setExpandedSensor(null)} style={{ fontSize: '1.1rem', padding: '0.45rem 1.2rem', borderRadius: '8px', background: '#19223a', color: '#fff', border: '1.5px solid #60A5FA', fontWeight: 600 }}>Close</button>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: '1rem', marginTop: '0.75rem' }}>
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <button className={metric === 'temperature' ? 'button small' : 'button-secondary small'} onClick={() => setMetric('temperature')}>Temperature</button>
-                                                <button className={metric === 'humidity' ? 'button small' : 'button-secondary small'} onClick={() => setMetric('humidity')}>Humidity</button>
+                                <div style={{ display: 'grid', gridTemplateColumns: '3.5fr 0.7fr', gap: '1.2rem', alignItems: 'start', height: '410px' }}>
+                                    <div className="sensor-modal-section-hover" style={{ background: 'rgba(18,28,48,0.98)', borderRadius: '1.2rem', boxShadow: '0 2px 18px 0 #000a1f44', padding: '1.4rem 1.4rem 1rem 1.4rem', border: '2px solid #22304a', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', transition: 'box-shadow 0.22s, border-color 0.22s' }}>
+                                        <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1.1rem' }}>
+                                            <button className={metric === 'temperature' ? 'button' : 'button-secondary'} style={{ fontSize: '1.05rem', padding: '0.38rem 1.2rem', borderRadius: '8px', fontWeight: 600, background: metric === 'temperature' ? 'linear-gradient(90deg,#60A5FA,#0ea5b7)' : 'rgba(96,165,250,0.12)', color: metric === 'temperature' ? '#fff' : '#60A5FA', border: '1.5px solid #60A5FA', transition: 'all 0.18s' }} onClick={() => setMetric('temperature')}>Temperature</button>
+                                            <button className={metric === 'humidity' ? 'button' : 'button-secondary'} style={{ fontSize: '1.05rem', padding: '0.38rem 1.2rem', borderRadius: '8px', fontWeight: 600, background: metric === 'humidity' ? 'linear-gradient(90deg,#60A5FA,#0ea5b7)' : 'rgba(96,165,250,0.12)', color: metric === 'humidity' ? '#fff' : '#60A5FA', border: '1.5px solid #60A5FA', transition: 'all 0.18s' }} onClick={() => setMetric('humidity')}>Humidity</button>
+                                            <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                                {rangeOptions.map(opt => (
+                                                    <button
+                                                        key={opt.label}
+                                                        className={historyRange === opt.label ? 'button' : 'button-secondary'}
+                                                        style={{ fontSize: '0.98rem', padding: '0.32rem 0.9rem', borderRadius: '7px', fontWeight: 600, background: historyRange === opt.label ? 'linear-gradient(90deg,#60A5FA,#0ea5b7)' : 'rgba(96,165,250,0.10)', color: historyRange === opt.label ? '#fff' : '#60A5FA', border: '1.2px solid #60A5FA', transition: 'all 0.18s' }}
+                                                        onClick={() => setHistoryRange(opt.label)}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
-
-                                        <div style={{ height: 140 }}>
-                                            <Sparkline values={(metric === 'temperature' ? temps : hums)} color={metric === 'temperature' ? '#60A5FA' : '#34D399'} />
+                                        <div style={{ height: 'calc(100% - 60px)', minHeight: 180, background: 'rgba(255,255,255,0.01)', borderRadius: '1rem', boxShadow: '0 0 0 2px #22304a, 0 8px 40px 0 #60A5FA33', marginBottom: '0.5rem' }}>
+                                            <Sparkline
+                                                values={metric === 'temperature' ? temps : hums}
+                                                color={metric === 'temperature' ? '#60A5FA' : '#34D399'}
+                                                history={filteredHistory}
+                                                yLabel={metric === 'temperature' ? 'Temperature (°C)' : 'Humidity (%)'}
+                                            />
                                         </div>
-                                        <div style={{ marginTop: '0.5rem', color: 'var(--text-medium)' }}>Showing last {history.length} readings (most recent on right)</div>
+                                        <div style={{ marginTop: '0.5rem', color: 'var(--text-medium)', fontSize: '1rem' }}>Showing {filteredHistory.length} readings from last {selectedRange.label}</div>
                                     </div>
-                                    <div style={{ background: '#071026', padding: '0.6rem', borderRadius: 6 }}>
-                                        <h4 style={{ marginTop: 0 }}>KPIs</h4>
+                                    <div className="sensor-modal-section-hover" style={{ background: '#071026', padding: '0.7rem 0.7rem 0.7rem 0.7rem', borderRadius: '1.2rem', boxShadow: '0 2px 18px 0 #000a1f44', border: '2px solid #22304a', height: '100%', display: 'flex', flexDirection: 'column', gap: '0.7rem', justifyContent: 'center', transition: 'box-shadow 0.22s, border-color 0.22s' }}>
+                                        <h4 style={{ marginTop: 0, fontSize: '1.1rem', fontWeight: 700, color: '#60A5FA', letterSpacing: '0.5px' }}>KPIs</h4>
                                         {metric === 'temperature' ? (
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                                                <div style={{ fontSize: '0.95rem' }}>Avg (°C)</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.7rem', fontSize: '1.05rem' }}>
+                                                <div>Avg (°C)</div>
                                                 <div style={{ fontWeight: 700 }}>{agg ? (agg.avgTemp ? agg.avgTemp.toFixed(2) + ' °C' : '—') : (temps.length ? (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(2) + ' °C' : '—')}</div>
-                                                <div style={{ fontSize: '0.95rem' }}>Min (°C)</div>
+                                                <div>Min (°C)</div>
                                                 <div style={{ fontWeight: 700 }}>{agg ? (agg.minTemp ?? '—') + ' °C' : (temps.length ? Math.min(...temps).toFixed(2) + ' °C' : '—')}</div>
-                                                <div style={{ fontSize: '0.95rem' }}>Max (°C)</div>
+                                                <div>Max (°C)</div>
                                                 <div style={{ fontWeight: 700 }}>{agg ? (agg.maxTemp ?? '—') + ' °C' : (temps.length ? Math.max(...temps).toFixed(2) + ' °C' : '—')}</div>
-                                                <div style={{ fontSize: '0.95rem' }}>Count</div>
+                                                <div>Count</div>
                                                 <div style={{ fontWeight: 700 }}>{agg ? (agg.count ?? 0) : temps.length}</div>
                                             </div>
                                         ) : (

@@ -4,7 +4,7 @@ const axios = require('axios');
 const notifyMainApp = async (eventType, alert) => {
     try {
         const populatedAlert = await alert.populate([
-            { path: 'sensor', select: 'sensorId type' },
+            { path: 'sensor', select: 'sensorId' },
             { path: 'zone', select: 'name' }
         ]);
 

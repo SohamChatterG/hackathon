@@ -2,22 +2,36 @@
 
 import React from 'react';
 
-const SensorList = ({ sensors, onSelectSensor, onDeleteSensor, selectedSensorId }) => (
-    <div className="zone-list-container">
-        {sensors.length === 0 ? <p>No sensors found.</p> : (
-            <ul className="zone-list">
-                {sensors.map(sensor => (
-                    <li key={sensor._id} className="zone-list-item"
-                        style={{ backgroundColor: selectedSensorId === sensor._id ? 'var(--background-light)' : 'transparent' }}>
-                        <div onClick={() => onSelectSensor(sensor)} style={{ flexGrow: 1, cursor: 'pointer' }}>
-                            <p className="zone-name">{sensor.sensorId}</p>
-                            <p className="zone-description">Zone: {sensor.zone ? sensor.zone.name : 'N/A'}</p>
+// Enhanced sensor list UI
+const SensorList = ({ sensors, onSelectSensor, onDeleteSensor, selectedSensorId }) => {
+    if (!sensors.length) return <p className="admin-card-sub" style={{ margin:0 }}>No sensors found.</p>;
+
+    return (
+        <div style={{ display:'flex', flexDirection:'column', gap:'.4rem' }}>
+            {sensors.map(sensor => {
+                const active = selectedSensorId === sensor._id;
+                return (
+                    <div
+                        key={sensor._id}
+                        onClick={() => onSelectSensor(sensor)}
+                        className={"sensor-row" + (active ? ' is-active' : '')}
+                    >
+                        <div className="sensor-row-main">
+                            <div className="sensor-id">{sensor.sensorId}</div>
+                            <div className="sensor-zone">{sensor.zone ? sensor.zone.name : 'Unassigned'}</div>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); onDeleteSensor(sensor._id); }} className="delete-button">Delete</button>
-                    </li>
-                ))}
-            </ul>
-        )}
-    </div>
-);
+                        <div className="sensor-row-actions">
+                            <button
+                                className="sensor-del-btn"
+                                onClick={(e) => { e.stopPropagation(); onDeleteSensor(sensor._id); }}
+                                title="Delete sensor"
+                            >DEL</button>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 export default SensorList;
