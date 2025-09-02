@@ -14,6 +14,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import './App.css';
 import './index.css';
+import './admin-theme.css';
 
 function App() {
   // The top-level loading check is no longer needed here.

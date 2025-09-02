@@ -1,3 +1,27 @@
+// @desc    Get sensors assigned to the logged-in user (Operator: only their zones, others: all)
+// @route   GET /api/sensors/assigned
+// @access  Protected (Operator, Manager, Admin)
+exports.getAssignedSensors = async (req, res) => {
+    try {
+        let sensors;
+        if (req.user.role === 'Operator') {
+            // Only sensors in zones assigned to this operator
+            const zoneIds = req.user.zones || [];
+            sensors = await Sensor.find({ zone: { $in: zoneIds } })
+                .populate('zone', 'name')
+                .sort({ sensorId: 1 });
+        } else {
+            // Manager/Admin: all sensors
+            sensors = await Sensor.find()
+                .populate('zone', 'name')
+                .sort({ sensorId: 1 });
+        }
+        res.status(200).json({ success: true, count: sensors.length, data: sensors });
+    } catch (error) {
+        console.error('Error fetching assigned sensors:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
 // FILE: src/controllers/sensorController.js
 
 const Sensor = require('../models/Sensor');

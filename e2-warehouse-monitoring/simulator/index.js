@@ -56,6 +56,7 @@ const runSimulation = () => {
             ...reading,
             sensorId: sensor.sensorId,
             warehouseId: sensor.warehouseId,
+            timestamp: new Date().toISOString(),
         };
         sendData(config.API_ENDPOINT, payload, config.JWT_TOKEN);
     });

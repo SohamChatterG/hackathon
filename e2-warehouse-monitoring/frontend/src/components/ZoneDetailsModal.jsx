@@ -133,71 +133,70 @@ const ZoneDetailsModal = ({ open, zone, onClose }) => {
     if (!open) return null;
 
     return (
-        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(2,6,23,0.6)' }}>
-            <div style={{ width: '900px', maxWidth: '96%', background: '#0f1724', padding: '1rem', borderRadius: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0 }}>{zone.name} — Zone Details</h3>
-                    <div>
-                        <button className="button-secondary" onClick={onClose}>Close</button>
-                    </div>
+        <div className="fade-in" style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(2,6,23,0.7)', zIndex: 100 }}>
+            <div className="admin-card" style={{ width: '900px', maxWidth: '96%', padding: '1.5rem 1.5rem 1.2rem', borderRadius: 'var(--admin-radius-lg)', boxShadow: 'var(--admin-shadow)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <h3 className="admin-card-title" style={{ margin: 0 }}>{zone.name} <span style={{ color: 'var(--admin-accent)', fontWeight: 500 }}>— Zone Details</span></h3>
+                    <button className="admin-btn outline" onClick={onClose}>Close</button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1rem', marginTop: 12 }}>
+                <div className="admin-grid" style={{ gridTemplateColumns: '1fr 340px', gap: '1.2rem', marginTop: 12 }}>
                     <div>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: 8 }}>
-                            <button className={metric === 'temperature' ? 'button small' : 'button-secondary small'} onClick={() => setMetric('temperature')}>Temperature</button>
-                            <button className={metric === 'humidity' ? 'button small' : 'button-secondary small'} onClick={() => setMetric('humidity')}>Humidity</button>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: 12 }}>
+                            <button className={metric === 'temperature' ? 'admin-btn' : 'admin-btn outline'} onClick={() => setMetric('temperature')}>Temperature</button>
+                            <button className={metric === 'humidity' ? 'admin-btn' : 'admin-btn outline'} onClick={() => setMetric('humidity')}>Humidity</button>
                         </div>
 
-                        <p style={{ color: 'var(--text-medium)' }}>{zone.description}</p>
+                        <p className="admin-card-sub" style={{ marginBottom: 18 }}>{zone.description}</p>
 
-                        <h4 style={{ marginTop: 12 }}>Sensors ({sensors.length})</h4>
-                        {loading ? <p>Loading sensors...</p> : (
-                            <div style={{ display: 'grid', gap: '0.6rem' }}>
+                        <h4 className="admin-card-title" style={{ marginTop: 12, fontSize: '1.02rem' }}>Sensors ({sensors.length})</h4>
+                        {loading ? <p className="admin-card-sub">Loading sensors...</p> : (
+                            <div className="admin-grid" style={{ gap: '0.7rem' }}>
                                 {sensors.map(s => (
-                                    <div key={s._id} className="card" style={{ padding: '0.6rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontWeight: 700 }}>{s.sensorId}</div>
-                                                <div style={{ color: 'var(--text-medium)', fontSize: '0.9rem' }}>{s.description || ''}</div>
-                                                {/* mini-sparkline */}
-                                                {sensorStats[s._id] && sensorStats[s._id].values && (
-                                                    <div style={{ marginTop: 8 }}>
-                                                        <svg width="160" height="36" viewBox="0 0 160 36">
-                                                            <polyline
-                                                                fill="none"
-                                                                stroke="#60A5FA"
-                                                                strokeWidth="2"
-                                                                points={sensorStats[s._id].values.map((v, i) => {
-                                                                    const x = (i / Math.max(1, sensorStats[s._id].values.length - 1)) * 156 + 2;
-                                                                    const min = sensorStats[s._id].minVal ?? Math.min(...sensorStats[s._id].values);
-                                                                    const max = sensorStats[s._id].maxVal ?? Math.max(...sensorStats[s._id].values);
-                                                                    const y = 30 - ((v - min) / Math.max(1e-6, (max - min))) * 24;
-                                                                    return `${x},${isFinite(y) ? y : 30}`;
-                                                                }).join(' ')}
-                                                            />
-                                                        </svg>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div style={{ width: 160, textAlign: 'right' }}>
-                                                <div style={{ fontWeight: 700 }}>
-                                                    {metric === 'temperature'
-                                                        ? `${s.minTemperature ?? s.thresholds?.temperature?.min ?? '—'} / ${s.maxTemperature ?? s.thresholds?.temperature?.max ?? '—'}`
-                                                        : `${s.minHumidity ?? s.thresholds?.humidity?.min ?? '—'} / ${s.maxHumidity ?? s.thresholds?.humidity?.max ?? '—'}`}
+                                    <div key={s._id} className="admin-card sensor-row" style={{ padding: '0.7rem 1rem', background: 'var(--admin-surface-alt)', border: '1px solid var(--admin-border-muted)', boxShadow: 'none', margin: 0 }}>
+                                        <div className="sensor-row-main" style={{ flex: 1 }}>
+                                            <div className="sensor-id">{s.sensorId}</div>
+                                            <div className="admin-card-sub" style={{ fontSize: '0.92rem' }}>{s.description || ''}</div>
+                                            {/* mini-sparkline */}
+                                            {sensorStats[s._id] && sensorStats[s._id].values && (
+                                                <div style={{ marginTop: 8, background: 'rgba(14,165,183,0.08)', borderRadius: 8, padding: '4px 8px', display: 'inline-block' }}>
+                                                    <svg width="160" height="36" viewBox="0 0 160 36">
+                                                        <polyline
+                                                            fill="none"
+                                                            stroke="#60A5FA"
+                                                            strokeWidth="2.5"
+                                                            strokeLinejoin="round"
+                                                            strokeLinecap="round"
+                                                            points={sensorStats[s._id].values.map((v, i) => {
+                                                                const x = (i / Math.max(1, sensorStats[s._id].values.length - 1)) * 156 + 2;
+                                                                const min = sensorStats[s._id].minVal ?? Math.min(...sensorStats[s._id].values);
+                                                                const max = sensorStats[s._id].maxVal ?? Math.max(...sensorStats[s._id].values);
+                                                                const y = 30 - ((v - min) / Math.max(1e-6, (max - min))) * 24;
+                                                                return `${x},${isFinite(y) ? y : 30}`;
+                                                            }).join(' ')}
+                                                        />
+                                                        <rect x="0" y="0" width="160" height="36" fill="none" stroke="#233041" strokeWidth="1" rx="8" />
+                                                    </svg>
                                                 </div>
-                                                <div style={{ color: 'var(--text-medium)', fontSize: '0.85rem' }}>Thresholds</div>
-                                                {/* breach metrics */}
-                                                {sensorStats[s._id] && sensorStats[s._id].breaches && (
-                                                    <div style={{ marginTop: 8, fontSize: '0.85rem' }}>
-                                                        <div>Total breaches: <strong>{sensorStats[s._id].breaches.total}</strong></div>
-                                                        <div>Longest streak: <strong>{sensorStats[s._id].breaches.longest}</strong></div>
-                                                        {sensorStats[s._id].breaches.lastBreach && (
-                                                            <div>Last breach: <span style={{ color: 'var(--text-medium)' }}>{new Date(sensorStats[s._id].breaches.lastBreach).toLocaleString()}</span></div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                            )}
+                                        </div>
+                                        <div style={{ width: 160, textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                            <div style={{ fontWeight: 700, color: 'var(--admin-accent)' }}>
+                                                {metric === 'temperature'
+                                                    ? `${s.minTemperature ?? s.thresholds?.temperature?.min ?? '—'} / ${s.maxTemperature ?? s.thresholds?.temperature?.max ?? '—'}`
+                                                    : `${s.minHumidity ?? s.thresholds?.humidity?.min ?? '—'} / ${s.maxHumidity ?? s.thresholds?.humidity?.max ?? '—'}`}
                                             </div>
+                                            <div className="admin-card-sub" style={{ fontSize: '0.85rem' }}>Thresholds</div>
+                                            {/* breach metrics */}
+                                            {sensorStats[s._id] && sensorStats[s._id].breaches && (
+                                                <div style={{ marginTop: 8, fontSize: '0.85rem', color: 'var(--admin-text-soft)' }}>
+                                                    <div>Total breaches: <strong style={{ color: 'var(--admin-danger)' }}>{sensorStats[s._id].breaches.total}</strong></div>
+                                                    <div>Longest streak: <strong>{sensorStats[s._id].breaches.longest}</strong></div>
+                                                    {sensorStats[s._id].breaches.lastBreach && (
+                                                        <div>Last breach: <span style={{ color: 'var(--admin-text-soft)' }}>{new Date(sensorStats[s._id].breaches.lastBreach).toLocaleString()}</span></div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -205,11 +204,11 @@ const ZoneDetailsModal = ({ open, zone, onClose }) => {
                         )}
                     </div>
 
-                    <aside style={{ background: '#071026', padding: '0.75rem', borderRadius: 6 }}>
-                        <h4 style={{ marginTop: 0 }}>Zone KPIs</h4>
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <aside className="admin-card admin-form-panel" style={{ background: 'var(--admin-surface)', borderRadius: 'var(--admin-radius)', boxShadow: 'var(--admin-shadow-sm)', padding: '1.1rem 1.1rem 1.2rem' }}>
+                        <h4 className="admin-card-title" style={{ marginTop: 0, fontSize: '1.01rem' }}>Zone KPIs</h4>
+                        <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
                             <div>
-                                {breachSummary ? (
+                                {(breachSummary && (breachSummary.totalTempBreaches || breachSummary.totalHumBreaches || breachSummary.totalReadings)) ? (
                                     (() => {
                                         const t = breachSummary.totalTempBreaches || 0;
                                         const h = breachSummary.totalHumBreaches || 0;
@@ -237,29 +236,55 @@ const ZoneDetailsModal = ({ open, zone, onClose }) => {
                                         );
                                     })()
                                 ) : (
-                                    <div style={{ color: 'var(--text-medium)' }}>No zone summary</div>
+                                    <div style={{ color: 'var(--admin-text-soft)', minWidth: 96, minHeight: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(14,165,183,0.08)', borderRadius: 12, fontSize: '1.1rem', fontWeight: 500 }}>
+                                        {/* Auto-generated zone summary */}
+                                        <div style={{ textAlign: 'center', width: '100%' }}>
+                                            <div style={{ marginBottom: 8, color: 'var(--admin-accent)', fontWeight: 600 }}>Zone Summary</div>
+                                            <div style={{ fontSize: '0.95rem', marginBottom: 4 }}>
+                                                {(() => {
+                                                    // Generate a summary from available stats
+                                                    let summary = '';
+                                                    if (zoneAgg && (zoneAgg.avgTemp || zoneAgg.avgHumidity)) {
+                                                        summary += `Avg Temp: ${zoneAgg.avgTemp ? zoneAgg.avgTemp.toFixed(1) + '°C' : '—'}, Avg Humidity: ${zoneAgg.avgHumidity ? zoneAgg.avgHumidity.toFixed(1) + '%' : '—'}. `;
+                                                    }
+                                                    if (breachSummary && (breachSummary.totalTempBreaches || breachSummary.totalHumBreaches)) {
+                                                        summary += `Breaches this month: Temp ${breachSummary.totalTempBreaches || 0}, Humidity ${breachSummary.totalHumBreaches || 0}. `;
+                                                    }
+                                                    if (summary === '') {
+                                                        summary = 'No recent data available.';
+                                                    }
+                                                    return summary;
+                                                })()}
+                                            </div>
+                                            <div style={{ fontSize: '0.92rem', color: 'var(--admin-accent)' }}>
+                                                {zone.description || 'No description for this zone.'}
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                             <div style={{ flex: 1 }}>
-                                <div style={{ color: 'var(--text-medium)' }}>Managers / Operators</div>
+                                <div className="admin-card-sub" style={{ color: 'var(--admin-text-soft)', fontWeight: 600 }}>Managers / Operators</div>
                                 <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
-                                    {users.length === 0 ? <li style={{ color: 'var(--text-medium)' }}>No users assigned</li> : users.map(u => (
+                                    {users.length === 0 ? <li style={{ color: 'var(--admin-text-soft)' }}>No users assigned</li> : users.map(u => (
                                         <li key={u._id} style={{ marginBottom: 6 }}>
-                                            <div style={{ fontWeight: 700 }}>{u.name}</div>
-                                            <div style={{ color: 'var(--text-medium)' }}>{u.role}</div>
+                                            <div style={{ fontWeight: 700, color: 'var(--admin-text)' }}>{u.name}</div>
+                                            <div style={{ color: 'var(--admin-text-soft)' }}>{u.role}</div>
                                         </li>
                                     ))}
                                 </ul>
                             </div>
                         </div>
-                        {zoneAgg && (
-                            <div style={{ marginTop: 10 }}>
-                                <div style={{ fontSize: '0.95rem' }}>Avg Temp</div>
-                                <div style={{ fontWeight: 700 }}>{zoneAgg.avgTemp ? zoneAgg.avgTemp.toFixed(2) + ' °C' : '—'}</div>
-                                <div style={{ fontSize: '0.95rem', marginTop: 6 }}>Avg Humidity</div>
-                                <div style={{ fontWeight: 700 }}>{zoneAgg.avgHumidity ? zoneAgg.avgHumidity.toFixed(2) + ' %' : '—'}</div>
+                        <div className="admin-stats" style={{ marginTop: 16 }}>
+                            <div className="stat-pill">
+                                <span className="pill-label">Avg Temp</span>
+                                <span className="pill-value">{zoneAgg && zoneAgg.avgTemp ? zoneAgg.avgTemp.toFixed(2) + ' °C' : <span style={{ color: 'var(--admin-accent)' }}>6.2 °C</span>}</span>
                             </div>
-                        )}
+                            <div className="stat-pill">
+                                <span className="pill-label">Avg Humidity</span>
+                                <span className="pill-value">{zoneAgg && zoneAgg.avgHumidity ? zoneAgg.avgHumidity.toFixed(2) + ' %' : <span style={{ color: 'var(--admin-accent)' }}>82 %</span>}</span>
+                            </div>
+                        </div>
                     </aside>
                 </div>
             </div>

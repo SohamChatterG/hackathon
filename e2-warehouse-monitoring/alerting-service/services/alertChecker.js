@@ -74,14 +74,47 @@ const checkAlerts = async () => {
 
         const readingsMap = new Map(latestReadings.map(r => [r.sensorId, r]));
 
+        const now = new Date();
+        const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
         for (const sensor of sensors) {
             const reading = readingsMap.get(sensor.sensorId);
             if (!reading) {
+                // No reading at all: resolve any open alerts for this sensor
+                for (const metric of ['temperature', 'humidity']) {
+                    const existingAlert = await Alert.findOne({ sensor: sensor._id, status: { $ne: 'resolved' }, metric });
+                    if (existingAlert) {
+                        existingAlert.status = 'resolved';
+                        existingAlert.resolvedAt = now;
+                        existingAlert.consecutiveBreaches = 0;
+                        existingAlert.history.push({ status: 'resolved', timestamp: now, notes: 'No data received for over 5 minutes. Auto-resolved.' });
+                        await existingAlert.save();
+                        await notifyMainApp('alert-update', existingAlert);
+                    }
+                }
                 console.log(`No readings yet for sensor ${sensor.sensorId}`);
                 continue;
             }
             if (!sensor.zone) {
                 console.log(`Sensor ${sensor.sensorId} has no zone assigned; skipping alert check.`);
+                continue;
+            }
+
+            // Check if the latest reading is older than 5 minutes
+            const readingTime = new Date(reading.timestamp);
+            if (now - readingTime > FIVE_MINUTES_MS) {
+                for (const metric of ['temperature', 'humidity']) {
+                    const existingAlert = await Alert.findOne({ sensor: sensor._id, status: { $ne: 'resolved' }, metric });
+                    if (existingAlert) {
+                        existingAlert.status = 'resolved';
+                        existingAlert.resolvedAt = now;
+                        existingAlert.consecutiveBreaches = 0;
+                        existingAlert.history.push({ status: 'resolved', timestamp: now, notes: 'No data received for over 5 minutes. Auto-resolved.' });
+                        await existingAlert.save();
+                        await notifyMainApp('alert-update', existingAlert);
+                    }
+                }
+                console.log(`No recent data for sensor ${sensor.sensorId} (last: ${reading.timestamp}). Auto-resolved alerts.`);
                 continue;
             }
 
@@ -122,8 +155,8 @@ const checkAlerts = async () => {
                             status: 'triggered',
                             severity: 'medium',
                             escalationLevel: 'Operator',
-                            triggeredAt: new Date(),
-                            history: [{ status: 'triggered', timestamp: new Date(), notes: `Initial breach detected. Value: ${value}` }],
+                            triggeredAt: now,
+                            history: [{ status: 'triggered', timestamp: now, notes: `Initial breach detected. Value: ${value}` }],
                             consecutiveBreaches: 1,
                             metric,
                         });
@@ -133,11 +166,11 @@ const checkAlerts = async () => {
 
                         if (alert.consecutiveBreaches >= 6 && alert.escalationLevel !== 'Admin') {
                             alert.escalationLevel = 'Admin';
-                            alert.history.push({ status: 'escalated', timestamp: new Date(), notes: 'Escalated to Admin' });
+                            alert.history.push({ status: 'escalated', timestamp: now, notes: 'Escalated to Admin' });
                             escalationChanged = true;
                         } else if (alert.consecutiveBreaches >= 3 && alert.escalationLevel === 'Operator') {
                             alert.escalationLevel = 'Manager';
-                            alert.history.push({ status: 'escalated', timestamp: new Date(), notes: 'Escalated to Manager' });
+                            alert.history.push({ status: 'escalated', timestamp: now, notes: 'Escalated to Manager' });
                             escalationChanged = true;
                         }
                     }
@@ -153,9 +186,9 @@ const checkAlerts = async () => {
                     }
                 } else if (existingAlert) {
                     existingAlert.status = 'resolved';
-                    existingAlert.resolvedAt = new Date();
+                    existingAlert.resolvedAt = now;
                     existingAlert.consecutiveBreaches = 0;
-                    existingAlert.history.push({ status: 'resolved', timestamp: new Date(), notes: 'Sensor reading returned to normal.' });
+                    existingAlert.history.push({ status: 'resolved', timestamp: now, notes: 'Sensor reading returned to normal.' });
                     await existingAlert.save();
                     await notifyMainApp('alert-update', existingAlert);
                 }
